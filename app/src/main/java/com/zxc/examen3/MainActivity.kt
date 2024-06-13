@@ -5,46 +5,78 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AccountBox
+import androidx.compose.material.icons.filled.Email
+import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Star
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Checkbox
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarDuration
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.zxc.examen3.Controlador.ServiceClientes
+import com.zxc.examen3.Controlador.ServiceContratos
 import com.zxc.examen3.Controlador.ServiceEventos
 import com.zxc.examen3.Controlador.ServicePresentadores
 import com.zxc.examen3.Modelo.Clientes
+import com.zxc.examen3.Modelo.Contratos
 import com.zxc.examen3.Modelo.Eventos
 import com.zxc.examen3.Modelo.Presentadores
 import com.zxc.examen3.Modelo.especialidadEnum
 import com.zxc.examen3.Modelo.generoEnum
 import com.zxc.examen3.Modelo.tipoEventoEnum
+import com.zxc.examen3.Vista.CrearCliente
+import com.zxc.examen3.Vista.CrearEvento
+import com.zxc.examen3.Vista.CrearPresentador
+import com.zxc.examen3.Vista.ListarEvento
+import com.zxc.examen3.Vista.ListarPresentador
 import com.zxc.examen3.ui.theme.Examen3Theme
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -70,47 +102,85 @@ fun GreetingPreview() {
     }
 }
 enum class PanelType{
-    Panel1, Panel2, Panel3, Panel4
+    Panel_Eventos, Panel_Presentadores, Panel_Clientes, Panel_Contratos
 }
 enum class currentCrudPanel{
     menu,crear, listar, actualizar, eliminar
 }
+var snackbarJob: Job? = null
 
 @Composable
-fun PanelPrincipal(modifier: Modifier = Modifier){
-    var asd by remember { mutableStateOf(PanelType.Panel1) }
+fun PanelPrincipal(modifier: Modifier = Modifier) {
+    val snackbarHostState = remember { SnackbarHostState() }
+    val scope = rememberCoroutineScope()
+
+    var currentPanel by remember { mutableStateOf(PanelType.Panel_Eventos) }
+
     Column(modifier = modifier) {
         Row(
             modifier = Modifier
                 .horizontalScroll(rememberScrollState())
                 .padding(vertical = 16.dp)
         ) {
+            Button(onClick = {
+                LanzarCoroutina(PanelType.Panel_Eventos, scope, snackbarHostState, 500)
+                currentPanel = PanelType.Panel_Eventos
+            }) {
+                Text("Gestión de Eventos")
+            }
+            Button(onClick = {
+                LanzarCoroutina(PanelType.Panel_Presentadores, scope, snackbarHostState, 500)
+                currentPanel = PanelType.Panel_Presentadores
+            }) {
+                Text("Gestión de Presentadores")
+            }
+            Button(onClick = {
+                LanzarCoroutina(PanelType.Panel_Clientes, scope, snackbarHostState, 500)
+                currentPanel = PanelType.Panel_Clientes
+            }) {
+                Text("Gestión de Clientes")
+            }
+            Button(onClick = {
+                LanzarCoroutina(PanelType.Panel_Contratos, scope, snackbarHostState, 500)
+                currentPanel = PanelType.Panel_Contratos
+            }) {
+                Text("Gestión de Contratos")
+            }
+        }
+        SnackbarHost(hostState = snackbarHostState)
+        when (currentPanel) {
+            PanelType.Panel_Eventos -> centro(type = currentPanel)
+            PanelType.Panel_Presentadores -> centro(type = currentPanel)
+            PanelType.Panel_Clientes -> centro(type = currentPanel)
+            PanelType.Panel_Contratos -> centro(type = currentPanel)
+        }
 
-            Button(onClick = { asd = PanelType.Panel1 }) {
-                Text("Gestion de Eventos")
-            }
-            Button(onClick = { asd = PanelType.Panel2 }) {
-                Text("Gestion de Presentadores")
-            }
-            Button(onClick = { asd = PanelType.Panel3 }) {
-                Text("Gestion de Clientes")
-            }
-            Button(onClick = { asd = PanelType.Panel4 }) {
-                Text("Gestion de Contratos")
-            }
-        }
-        when (asd) {
-            PanelType.Panel1 -> centro(type =asd)
-            PanelType.Panel2 -> centro(type =asd)
-            PanelType.Panel3 -> centro(type =asd)
-            PanelType.Panel4 -> centro(type =asd)
-        }
+
+    }
+}
+
+fun LanzarCoroutina(panelType: PanelType, scope: CoroutineScope, snackbarHostState: SnackbarHostState, durationMs: Long) {
+    val message = when (panelType) {
+        PanelType.Panel_Eventos -> "Gestión de Eventos"
+        PanelType.Panel_Presentadores -> "Gestión de Presentadores"
+        PanelType.Panel_Clientes -> "Gestión de Clientes"
+        PanelType.Panel_Contratos -> "Gestión de Contratos"
     }
 
 
+    snackbarJob?.cancel()
+    snackbarJob = scope.launch {
+
+        snackbarHostState.showSnackbar(
+            message = "Cambiado a $message",
+            duration = when {
+                durationMs <= 1500 -> SnackbarDuration.Short
+                else -> SnackbarDuration.Long
+            }
+        )
+
+    }
 }
-
-
 
 @Composable
 fun centro(type: PanelType){
@@ -118,6 +188,7 @@ fun centro(type: PanelType){
     when(current) {
         currentCrudPanel.menu -> {
             Column {
+                Text("Menu Principal ${type}")
                 Button(onClick = { current = currentCrudPanel.crear }) {
                     Text("Crear")
                 }
@@ -132,493 +203,102 @@ fun centro(type: PanelType){
                 }
             }
         }
-        currentCrudPanel.crear -> Crear (type)
-        currentCrudPanel.listar -> Listar(type)
-        currentCrudPanel.actualizar -> Actualizar(type)
-        currentCrudPanel.eliminar -> Eliminar(type)
+        currentCrudPanel.crear -> {
+            Crear(type, onBack = { current = currentCrudPanel.menu })
+        }
+        currentCrudPanel.listar -> {
+            Listar(type, onBack = { current = currentCrudPanel.menu })
+        }
+        currentCrudPanel.actualizar -> {
+            Actualizar(type, onBack = { current = currentCrudPanel.menu })
+        }
+        currentCrudPanel.eliminar -> {
+            Eliminar(type, onBack = { current = currentCrudPanel.menu })
+        }
     }
 }
 
 @Composable
-fun Crear(type: PanelType) {
-    when(type){
-        PanelType.Panel1 -> {
-            CrearEvento()
+fun Crear(type: PanelType, onBack: () -> Unit) {
+    Column {
+        when(type){
+            PanelType.Panel_Eventos -> CrearEvento()
+            PanelType.Panel_Presentadores -> CrearPresentador()
+            PanelType.Panel_Clientes -> CrearCliente()
+            PanelType.Panel_Contratos -> CrearContrato()
         }
-        PanelType.Panel2 -> {
-            CrearPresentador()
-        }
-        PanelType.Panel3 -> {
-            CrearCliente()
-        }
-        PanelType.Panel4 -> {
-            CrearContrato()
+        Spacer(modifier = Modifier.height(10.dp))
+        Button(onClick = onBack) {
+            Text("Regresar al Menú Principal")
         }
     }
 }
 @Composable
-fun Actualizar(type: PanelType) {
+fun Actualizar(type: PanelType, onBack: () -> Unit) {
     when(type){
-        PanelType.Panel1 -> {
+        PanelType.Panel_Eventos -> {
             ActualizarEvento()
         }
-        PanelType.Panel2 -> {
+        PanelType.Panel_Presentadores -> {
             ActualizarPresentador()
         }
-        PanelType.Panel3 -> {
+        PanelType.Panel_Clientes -> {
             ActualizarCliente()
         }
-        PanelType.Panel4 -> {
+        PanelType.Panel_Contratos -> {
             ActualizarContrato()
         }
     }
+    Spacer(modifier = Modifier.height(10.dp))
+    Button(onClick = onBack) {
+        Text("Regresar al Menú Principal")
+    }
 }
 @Composable
-fun Eliminar(type: PanelType) {
+fun Eliminar(type: PanelType, onBack: () -> Unit) {
     when(type){
-        PanelType.Panel1 -> {
+        PanelType.Panel_Eventos -> {
             EliminarEvento()
         }
-        PanelType.Panel2 -> {
+        PanelType.Panel_Presentadores -> {
             EliminarPresentador()
         }
-        PanelType.Panel3 -> {
+        PanelType.Panel_Clientes -> {
             EliminarCliente()
         }
-        PanelType.Panel4 -> {
+        PanelType.Panel_Contratos -> {
             EliminarContrato()
         }
     }
+    Spacer(modifier = Modifier.height(10.dp))
+    Button(onClick = onBack) {
+        Text("Regresar al Menú Principal")
+    }
 }
 @Composable
-fun Listar(type: PanelType) {
+fun Listar(type: PanelType, onBack: () -> Unit) {
     when(type){
-        PanelType.Panel1 -> {
+        PanelType.Panel_Eventos -> {
             ListarEvento()
         }
-        PanelType.Panel2 -> {
+        PanelType.Panel_Presentadores -> {
             ListarPresentador()
         }
-        PanelType.Panel3 -> {
+        PanelType.Panel_Clientes -> {
             ListarCliente()
         }
-        PanelType.Panel4 -> {
+        PanelType.Panel_Contratos -> {
             ListarContrato()
         }
     }
-}
-
-@Composable
-fun CrearEvento(){
-    var responsev1 by remember { mutableStateOf("") }
-
-    var responsev2 by remember { mutableStateOf(tipoEventoEnum.Fiestas_de_cumpleaños) }
-    var responsev3 by remember { mutableStateOf("") }
-    var responsev4pre by remember { mutableStateOf("") }
-    var responsev4 = responsev4pre.toIntOrNull()
-    var responsev5pre by remember { mutableStateOf("") }
-    var responsev5 = responsev5pre.toFloatOrNull()
-    var responsev6pre by remember { mutableStateOf("") }
-    var responsev6 = responsev6pre.toIntOrNull()
-    var responsev7 by remember { mutableStateOf("") }
-    var responsev8 by remember { mutableStateOf("") }
-    Column {
-        Text("Crear Evento")
-        Row {
-            Text(text = "Id Evento")
-            TextField(value = responsev1, onValueChange = {
-                responsev1 = it
-            })
-        }
-        Row {
-            Text(text = "Tipo de Evento")
-
-            var selectedTheme by remember { mutableStateOf(tipoEventoEnum.Fiestas_de_cumpleaños) }
-
-            Row(
-                modifier = Modifier
-                    .horizontalScroll(rememberScrollState())
-                    .padding(vertical = 16.dp)
-            ) {
-                tipoEventoEnum.values().forEachIndexed { index, theme ->
-                    ThemeSelectionItem(
-                        theme = theme.descripcion,
-                        color = Color.Magenta,
-                        isChecked = selectedTheme == theme,
-                        onCheckedChange = { isChecked ->
-                            selectedTheme = if (isChecked) theme else tipoEventoEnum.Fiestas_de_cumpleaños
-                            responsev2 = selectedTheme
-                        }
-                    )
-                }
-            }
-
-        }
-        Row {
-            Text(text = "Descripcion")
-            TextField(value = responsev3, onValueChange = {
-                responsev3 = it
-            })
-        }
-        Row {
-            Text(text = "Duracion")
-            TextField(value = responsev4pre, onValueChange = {
-                responsev4pre = it
-            })
-        }
-        Row {
-            Text(text = "Precio Base")
-            TextField(value = responsev5pre, onValueChange = {
-                responsev5pre = it
-            })
-        }
-        Row {
-            Text(text = "Numero de animadores necesarios")
-            TextField(value = responsev6pre, onValueChange = {
-                responsev6pre = it
-            })
-        }
-        Row {
-            Text(text = "Fecha de evento")
-            TextField(value = responsev7, onValueChange = {
-                responsev7 = it
-            })
-        }
-        Row {
-            Text(text = "Ubicacion del evento")
-            TextField(value = responsev8, onValueChange = {
-                responsev8 = it
-            })
-        }
-        Row {
-            Button(onClick = {
-                ServiceEventos.agregarEventos(
-                    Eventos(
-                        responsev1,
-                        responsev2,
-                        responsev3,
-                        responsev4!!,
-                        responsev5!!,
-                        responsev6!!,
-                        responsev7,
-                        responsev8
-                    )
-                )
-                responsev1 = ""
-                responsev2 = tipoEventoEnum.Fiestas_de_cumpleaños
-                responsev3 = ""
-                responsev4pre = ""
-                responsev5pre = ""
-                responsev6pre = ""
-                responsev7 = ""
-                responsev8 = ""
-
-
-            }) {
-                Text(text = "AGREGAR")
-            }
-        }
-    }
-
-    
-}
-@Composable
-    fun ThemeSelectionItem(theme: String, color: Color, isChecked: Boolean, onCheckedChange: (Boolean) -> Unit) {
-    Column(
-        horizontalAlignment = Alignment.CenterHorizontally,
-        modifier = Modifier.padding(8.dp)
-    ) {
-        Box(
-            modifier = Modifier
-                .size(48.dp)
-                .background(color),
-            contentAlignment = Alignment.Center
-        ) {
-            Text(
-                text = theme.toString(), // Tomar las primeras dos letras como iniciales
-                color = Color.White,
-                fontSize = 16.sp,
-                fontWeight = FontWeight.Bold
-            )
-        }
-        Checkbox(
-            checked = isChecked,
-            onCheckedChange = onCheckedChange,
-            modifier = Modifier.padding(top = 4.dp)
-        )
+    Spacer(modifier = Modifier.height(10.dp))
+    Button(onClick = onBack) {
+        Text("Regresar al Menú Principal")
     }
 }
 
-@Composable
-fun CrearPresentador(){
-    var responsev1 by remember { mutableStateOf("") }
-    var responsev2 by remember { mutableStateOf("") }
-    var responsev3 by remember { mutableStateOf("") }
-    var responsev4 by remember { mutableStateOf("") }
-    var responsev5 by remember { mutableStateOf("") }
-    var responsev6 by remember { mutableStateOf(generoEnum.Otro) }
-    var responsev7 by remember { mutableStateOf("") }
-    var responsev8 by remember { mutableStateOf("") }
-    var responsev9 by remember { mutableStateOf("") }
-    var responsev10 by remember { mutableStateOf("") }
-    var responsev11 by remember { mutableStateOf("") }
-    var responsev12 by remember { mutableStateOf(especialidadEnum.Mago) }
-    Column (Modifier.verticalScroll(rememberScrollState())){
-        Text("Crear Presentadores")
-        //1
-        Row {
-            Text(text = "Id Presentador")
-            TextField(value = responsev1, onValueChange = {
-                responsev1 = it
-            })
-        }
-        //2
-        Row {
-            Text(text = "CUIPresentador")
-            TextField(value = responsev2, onValueChange = {
-                responsev2 = it
-            })
-        }
-        //3
-        Row {
-            Text(text = "nombrePresentador")
-            TextField(value = responsev3, onValueChange = {
-                responsev3 = it
-            })
-        }
-        //4
-        Row {
-            Text(text = "apellidoPaPresentador")
-            TextField(value = responsev4, onValueChange = {
-                responsev4 = it
-            })
-        }
-        //5
-        Row {
-            Text(text = "apellidoMaPresentador")
-            TextField(value = responsev5, onValueChange = {
-                responsev5 = it
-            })
-        }
-        //6
-        Row {
-            Text(text = "generoPresentador")
-
-            var selectedTheme by remember { mutableStateOf(generoEnum.Otro) }
-
-            Row(
-                modifier = Modifier
-                    .horizontalScroll(rememberScrollState())
-                    .padding(vertical = 16.dp)
-            ) {
-                generoEnum.values().forEachIndexed { index, theme ->
-                    ThemeSelectionItem(
-                        theme = theme.descripcion,
-                        color = Color.Magenta,
-                        isChecked = selectedTheme == theme,
-                        onCheckedChange = { isChecked ->
-                            selectedTheme = if (isChecked) theme else generoEnum.Otro
-                            responsev6 = selectedTheme
-                        }
-                    )
-                }
-            }
-
-        }
-        //7
-        Row {
-            Text(text = "apellidoMaPresentador")
-            TextField(value = responsev7, onValueChange = {
-                responsev7 = it
-            })
-        }
-        //8
-        Row {
-            Text(text = "apellidoMaPresentador")
-            TextField(value = responsev8, onValueChange = {
-                responsev8 = it
-            })
-        }
-        //9
-        Row {
-            Text(text = "apellidoMaPresentador")
-            TextField(value = responsev9, onValueChange = {
-                responsev9 = it
-            })
-        }
-        //10
-        Row {
-            Text(text = "Descripcion")
-            TextField(value = responsev10, onValueChange = {
-                responsev10 = it
-            })
-        }
-        //11
-        Row {
-            Text(text = "Duracion")
-            TextField(value = responsev11, onValueChange = {
-                responsev11 = it
-            })
-        }
-        //12
-        Row {
-            Text(text = "Especialidad")
-
-            var selectedTheme by remember { mutableStateOf(especialidadEnum.Mago) }
-
-            Row(
-                modifier = Modifier
-                    .horizontalScroll(rememberScrollState())
-                    .padding(vertical = 16.dp)
-            ) {
-                especialidadEnum.values().forEachIndexed { index, theme ->
-                    ThemeSelectionItem(
-                        theme = theme.descripcion,
-                        color = Color.Magenta,
-                        isChecked = selectedTheme == theme,
-                        onCheckedChange = { isChecked ->
-                            selectedTheme = if (isChecked) theme else especialidadEnum.Mago
-                            responsev12 = selectedTheme
-                        }
-                    )
-                }
-            }
-
-        }
-
-        Row {
-            Button(onClick = {
-                ServicePresentadores.agregarEventos(
-                    Presentadores(
-                        responsev1,
-                        responsev2,
-                        responsev3,
-                        responsev4,
-                        responsev5,
-                        responsev6,
-                        responsev7,
-                        responsev8,
-                        responsev9,
-                        responsev10,
-                        responsev11,
-                        responsev12
-                    )
-                )
-                responsev1 = ""
-                responsev2 = ""
-                responsev3 = ""
-                responsev4 = ""
-                responsev5 = ""
-                responsev6 = generoEnum.Otro
-                responsev7 = ""
-                responsev8 = ""
-                responsev9 = ""
-                responsev10 = ""
-                responsev11 = ""
-                responsev12 = especialidadEnum.Mago
 
 
-            }) {
-                Text(text = "AGREGAR")
-            }
-        }
-    }
-
-}
-
-@Composable
-fun CrearCliente(){
-    var responsev1 by remember { mutableStateOf("") }
-    var responsev2 by remember { mutableStateOf("") }
-    var responsev3 by remember { mutableStateOf("") }
-    var responsev4 by remember { mutableStateOf("") }
-    var responsev5 by remember { mutableStateOf("") }
-    var responsev6 by remember { mutableStateOf("") }
-    var responsev7 by remember { mutableStateOf("") }
-    var responsev8 by remember { mutableStateOf("") }
-
-    Column {
-        Text("Crear Cliente")
-        //1
-        Row {
-            Text(text = "idCliente")
-            TextField(value = responsev1, onValueChange = {
-                responsev1 = it
-            })
-        }
-        //2
-        Row {
-            Text(text = "idCliente")
-            TextField(value = responsev2, onValueChange = {
-                responsev2 = it
-            })
-        }
-        //3
-        Row {
-            Text(text = "idCliente")
-            TextField(value = responsev3, onValueChange = {
-                responsev3 = it
-            })
-        }
-        //4
-        Row {
-            Text(text = "idCliente")
-            TextField(value = responsev4, onValueChange = {
-                responsev4 = it
-            })
-        }
-        //5
-        Row {
-            Text(text = "idCliente")
-            TextField(value = responsev5, onValueChange = {
-                responsev5 = it
-            })
-        }
-        //6
-        Row {
-            Text(text = "idCliente")
-            TextField(value = responsev6, onValueChange = {
-                responsev6 = it
-            })
-        }
-        //7
-        Row {
-            Text(text = "idCliente")
-            TextField(value = responsev7, onValueChange = {
-                responsev7 = it
-            })
-        }
-        //8
-        Row {
-            Text(text = "idCliente")
-            TextField(value = responsev8, onValueChange = {
-                responsev8 = it
-            })
-        }
-
-        Row {
-            Button(onClick = {
-                ServiceClientes.agregarEventos(
-                    Clientes(
-                        responsev1,
-                        responsev2,
-                        responsev3,
-                        responsev4,
-                        responsev5,
-                        responsev6,
-                        responsev7,
-                        responsev8
-                    )
-                )
-
-            }) {
-                Text(text = "AGREGAR")
-            }
-        }
-    }
-
-
-}
 @Composable
 fun CrearContrato(){
     Text("Crear Contrato")
@@ -643,75 +323,294 @@ fun ActualizarContrato(){
 }
 //
 @Composable
-fun EliminarEvento(){
-    Text("EliminarEvento")
-}
-@Composable
-fun EliminarPresentador(){
-    Text("Eliminar Presentador")
+fun EliminarEvento() {
+    val eventos = ServiceEventos.listarEventos()
+    var selectedEvento by remember { mutableStateOf<Eventos?>(null) }
+    val showDialog = remember { mutableStateOf(false) }
+
+    if (eventos.isEmpty()) {
+        Text("No hay eventos para eliminar.")
+    } else {
+        Column {
+            DropdownMenuEventos(eventos, selectedEvento) { selectedEvento = it }
+            Button(
+                onClick = { showDialog.value = true },
+                enabled = selectedEvento != null
+            ) {
+                Text("Eliminar Evento")
+            }
+            if (showDialog.value) {
+                ConfirmarEliminacionDialog(
+                    "¿Está seguro de que desea eliminar este evento?",
+                    onConfirm = {
+                        selectedEvento?.let { ServiceEventos.eliminarEventos(it.idEventos) }
+                        showDialog.value = false
+                    },
+                    onDismiss = { showDialog.value = false }
+                )
+            }
+        }
+    }
 }
 
 @Composable
-fun EliminarCliente(){
-    Text("Eliminar Cliente")
+fun EliminarPresentador() {
+    val presentadores = ServicePresentadores.listarEventos()
+    var selectedPresentador by remember { mutableStateOf<Presentadores?>(null) }
+    val showDialog = remember { mutableStateOf(false) }
+
+    if (presentadores.isEmpty()) {
+        Text("No hay presentadores para eliminar.")
+    } else {
+        Column {
+            DropdownMenuPresentadores(presentadores, selectedPresentador) { selectedPresentador = it }
+            Button(
+                onClick = { showDialog.value = true },
+                enabled = selectedPresentador != null
+            ) {
+                Text("Eliminar Presentador")
+            }
+            if (showDialog.value) {
+                ConfirmarEliminacionDialog(
+                    "¿Está seguro de que desea eliminar este presentador?",
+                    onConfirm = {
+                        selectedPresentador?.let { ServicePresentadores.eliminarEventos(it.idPresentador) }
+                        showDialog.value = false
+                    },
+                    onDismiss = { showDialog.value = false }
+                )
+            }
+        }
+    }
+}
+
+@Composable
+fun EliminarCliente() {
+    val clientes = ServiceClientes.listarEventos()
+    var selectedCliente by remember { mutableStateOf<Clientes?>(null) }
+    val showDialog = remember { mutableStateOf(false) }
+
+    if (clientes.isEmpty()) {
+        Text("No hay clientes para eliminar.")
+    } else {
+        Column {
+            DropdownMenuClientes(clientes, selectedCliente) { selectedCliente = it }
+            Button(
+                onClick = { showDialog.value = true },
+                enabled = selectedCliente != null
+            ) {
+                Text("Eliminar Cliente")
+            }
+            if (showDialog.value) {
+                ConfirmarEliminacionDialog(
+                    "¿Está seguro de que desea eliminar este cliente?",
+                    onConfirm = {
+                        selectedCliente?.let { ServiceClientes.eliminarEventos(it.idCliente) }
+                        showDialog.value = false
+                    },
+                    onDismiss = { showDialog.value = false }
+                )
+            }
+        }
+    }
+}
+
+@Composable
+fun EliminarContrato() {
+    val contratos = ServiceContratos.listarEventos()
+    var selectedContrato by remember { mutableStateOf<Contratos?>(null) }
+    val showDialog = remember { mutableStateOf(false) }
+
+    if (contratos.isEmpty()) {
+        Text("No hay contratos para eliminar.")
+    } else {
+        Column {
+            DropdownMenuContratos(contratos, selectedContrato) { selectedContrato = it }
+            Button(
+                onClick = { showDialog.value = true },
+                enabled = selectedContrato != null
+            ) {
+                Text("Eliminar Contrato")
+            }
+            if (showDialog.value) {
+                ConfirmarEliminacionDialog(
+                    "¿Está seguro de que desea eliminar este contrato?",
+                    onConfirm = {
+                        selectedContrato?.let { ServiceContratos.eliminarEventos(it.idContratos) }
+                        showDialog.value = false
+                    },
+                    onDismiss = { showDialog.value = false }
+                )
+            }
+        }
+    }
+}
+
+@Composable
+fun ConfirmarEliminacionDialog(mensaje: String, onConfirm: () -> Unit, onDismiss: () -> Unit) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        confirmButton = {
+            Button(onClick = onConfirm) { Text("Confirmar") }
+        },
+        dismissButton = {
+            Button(onClick = onDismiss) { Text("Cancelar") }
+        },
+        text = { Text(mensaje) }
+    )
 }
 @Composable
-fun EliminarContrato(){
-    Text("Eliminar Contrato")
+fun DropdownMenuClientes(clientes: List<Clientes>, selectedCliente: Clientes?, onClienteSelected: (Clientes) -> Unit) {
+    var expanded by remember { mutableStateOf(false) }
+    Box(modifier = Modifier.fillMaxWidth().padding(8.dp)) {
+        Text(
+            text = selectedCliente?.nombrCliente ?: "Seleccione un cliente",
+            modifier = Modifier.clickable { expanded = true }
+        )
+        DropdownMenu(
+            expanded = expanded,
+            onDismissRequest = { expanded = false }
+        ) {
+            clientes.forEach { cliente ->
+                DropdownMenuItem(onClick = {
+                    onClienteSelected(cliente)
+                    expanded = false
+                }, text = { Text("${cliente.nombrCliente} - ${cliente.idCliente}") })
+            }
+        }
+    }
 }
+
+@Composable
+fun DropdownMenuContratos(contratos: List<Contratos>, selectedContrato: Contratos?, onContratoSelected: (Contratos) -> Unit) {
+    var expanded by remember { mutableStateOf(false) }
+    Box(modifier = Modifier.fillMaxWidth().padding(8.dp)) {
+        Text(
+            text = selectedContrato?.idContratos ?: "Seleccione un contrato",
+            modifier = Modifier.clickable { expanded = true }
+        )
+        DropdownMenu(
+            expanded = expanded,
+            onDismissRequest = { expanded = false }
+        ) {
+            contratos.forEach { contrato ->
+                DropdownMenuItem(onClick = {
+                    onContratoSelected(contrato)
+                    expanded = false
+                }, text = { Text("Contrato ${contrato.idContratos} - ${contrato.ClienteRegistrado?.nombrCliente ?: "Desconocido"}") })
+            }
+        }
+    }
+}
+
+@Composable
+fun DropdownMenuPresentadores(
+    presentadores: List<Presentadores>,
+    selectedPresentador: Presentadores?,
+    onPresentadorSelected: (Presentadores) -> Unit
+) {
+    var expanded by remember { mutableStateOf(false) }
+    Box(modifier = Modifier.fillMaxWidth().padding(8.dp)) {
+        Text(
+            text = selectedPresentador?.let { "${it.nombrePresentador} ${it.apellidoPaPresentador}" } ?: "Seleccione un presentador",
+            modifier = Modifier
+                .clickable { expanded = true }
+                .padding(8.dp)
+        )
+        DropdownMenu(
+            expanded = expanded,
+            onDismissRequest = { expanded = false }
+        ) {
+            presentadores.forEach { presentador ->
+                DropdownMenuItem(onClick = {
+                    onPresentadorSelected(presentador)
+                    expanded = false
+                }, text = { Text("${presentador.nombrePresentador} ${presentador.apellidoPaPresentador} - ${presentador.idPresentador}") })
+            }
+        }
+    }
+}
+
+@Composable
+fun DropdownMenuEventos(
+    eventos: List<Eventos>,
+    selectedEvento: Eventos?,
+    onEventoSelected: (Eventos) -> Unit
+) {
+    var expanded by remember { mutableStateOf(false) }
+    Box(modifier = Modifier.fillMaxWidth().padding(8.dp)) {
+        Text(
+            text = selectedEvento?.let { "${it.tipoEvento.descripcion} - ${it.idEventos}" } ?: "Seleccione un evento",
+            modifier = Modifier
+                .clickable { expanded = true }
+                .padding(8.dp)
+        )
+        DropdownMenu(
+            expanded = expanded,
+            onDismissRequest = { expanded = false }
+        ) {
+            eventos.forEach { evento ->
+                DropdownMenuItem(onClick = {
+                    onEventoSelected(evento)
+                    expanded = false
+                }, text = { Text("${evento.tipoEvento.descripcion} - ${evento.idEventos}") })
+            }
+        }
+    }
+}
+
 //
-@Composable
-fun ListarEvento(){
-    Text("Listar Evento")
-    Column {
-        ServiceEventos.listarEventos().forEach {
-            Column (Modifier.background(Color.Yellow)){
-                Text(it.idEventos.toString())
-                Text(it.tipoEvento.toString())
-                Text(it.descripcion)
-                Text(it.duracion.toString())
-                Text(it.precioBase.toString())
-                Text(it.numAnimadores.toString())
-                Text(it.FechaEvento.toString())
-                Text(it.ubiEvento)
-            }
-            Spacer(modifier = Modifier.size(10.dp))
-        }
 
-    }
-}
-@Composable
-fun ListarPresentador(){
-    Text("Listar Evento")
-    Column {
-        ServicePresentadores.listarEventos().forEach {
-            Column (Modifier.background(Color.Yellow)){
-                Text(it.idPresentador)
-                Text(it.CUIPresentador)
-                Text(it.nombrePresentador)
-                Text(it.apellidoPaPresentador)
-                Text(it.apellidoMaPresentador)
-                Text(it.generoPresentador.toString())
-                Text(it.fechaNacimientoPresentador)
-                Text(it.direccionPresentador)
-                Text(it.telefonoPresentador)
-                Text(it.correoPresentador)
-                Text(it.direccionPresentador)
-                Text(it.especialidadPresentado.toString())
-            }
-            Spacer(modifier = Modifier.size(10.dp))
-        }
 
+
+@Composable
+fun ListarCliente() {
+    Text("Listar Clientes", style = MaterialTheme.typography.headlineSmall)
+    Column {
+        ServiceClientes.listarEventos().forEach { cliente ->
+            Row(modifier = Modifier.padding(8.dp).background(Color.Black), verticalAlignment = Alignment.CenterVertically) {
+                Icon(Icons.Filled.AccountBox, contentDescription = "Cliente", tint = Color.Green)
+                Spacer(Modifier.width(8.dp))
+                Column {
+                    Text("ID: ${cliente.idCliente}")
+                    Text("Nombre: ${cliente.nombrCliente}")
+                    Text("Apellido Paterno: ${cliente.apellidoPaCliente}")
+                    Text("Apellido Materno: ${cliente.apellidoMaCliente}")
+                    Text("Domicilio: ${cliente.domicilioCliente}")
+                    Text("Teléfono: ${cliente.telefonoCliente}")
+                    Text("Correo: ${cliente.correoCliente}")
+                    Text("Fecha de Registro: ${cliente.fechaRegistroCliente}")
+                }
+            }
+        }
     }
 }
 
 @Composable
-fun ListarCliente(){
-    Text("Listar Cliente")
+fun ListarContrato() {
+    Text("Listar Contratos", style = MaterialTheme.typography.headlineSmall)
+    Column {
+        ServiceContratos.listarEventos().forEach { contrato ->
+            Row(modifier = Modifier.padding(8.dp).background(Color.Black), verticalAlignment = Alignment.CenterVertically) {
+                Icon(Icons.Filled.Email, contentDescription = "Contrato", tint = Color.Blue)
+                Spacer(Modifier.width(8.dp))
+                Column {
+                    Text("ID Contrato: ${contrato.idContratos}")
+                    Text("Evento: ${contrato.EventoRegistrado?.idEventos ?: "N/A"}")
+                    Text("Presentador: ${contrato.PresentadorRegistrado?.idPresentador ?: "N/A"}")
+                    Text("Cliente: ${contrato.ClienteRegistrado?.idCliente ?: "N/A"}")
+                    Text("Lugar del Evento: ${contrato.lugarEvento}")
+                    Text("Fecha del Contrato: ${contrato.fechaContrato}")
+                    Text("Forma de Pago: ${contrato.formaPago.descripcion}")
+                    Text("Precio Final: ${contrato.precioFinalAcordado}")
+                    Text("Descuento Aplicado: ${contrato.descuentoAplicado}")
+                    Text("Observaciones: ${contrato.observaciones}")
+                    Text("Estado de la Compra: ${contrato.estadoCompra.descripcion}")
+                }
+            }
+        }
+    }
 }
-@Composable
-fun ListarContrato(){
-    Text("Listar Contrato")
-}
+
 //
 

@@ -8,7 +8,12 @@ enum class tipoEventoEnum(
     Eventos_de_empresa("Eventos_de_empresa")
 
 }
-
+enum class especialidadEnum(
+    var descripcion: String
+){
+    Mago("Mago"),
+    Payaso("Payaso"),
+}
 enum class generoEnum(
     var descripcion: String
 ){
@@ -17,12 +22,7 @@ enum class generoEnum(
     Otro("Otro")
 }
 
-enum class especialidadEnum(
-    var descripcion: String
-){
-    Mago("Mago"),
-    Payaso("Payaso"),
-}
+
 
 enum class formaPagoEnum(
     var descripcion: String
